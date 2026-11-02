@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nse-ovs-dpi-rules
+  namespace: nse-ovs-dpi
+data:
+  local.rules: |
+    alert http any any -> any 8080 (msg:"nse-ovs-dpi GET /admin"; flow:to_server,established; http.method; content:"GET"; http.uri; content:"/admin"; sid:1000001; rev:1;)
+    alert http any any -> any 8080 (msg:"nse-ovs-dpi POST /upload"; flow:to_server,established; http.method; content:"POST"; http.uri; content:"/upload"; sid:1000002; rev:1;)
+    alert http any any -> any 8080 (msg:"nse-ovs-dpi Host blocked.local"; flow:to_server,established; http.host; content:"blocked.local"; sid:1000003; rev:1;)
+    alert http any any -> any 8080 (msg:"nse-ovs-dpi Header X-Debug 1"; flow:to_server,established; http.header; content:"X-Debug|3A| 1"; nocase; sid:1000004; rev:1;)

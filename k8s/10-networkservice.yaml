@@ -1,0 +1,16 @@
+apiVersion: networkservicemesh.io/v1
+kind: NetworkService
+metadata:
+  name: nse-ovs-dpi
+  namespace: nse-ovs-dpi
+spec:
+  payload: ETHERNET
+  matches:
+    - source_selector:
+        app: dpi
+      routes:
+        - destination_selector:
+            app: server
+    - routes:
+        - destination_selector:
+            app: dpi

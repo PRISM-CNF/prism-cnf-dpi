@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nse-ovs-dpi
+  namespace: nse-ovs-dpi
+  labels:
+    app: nse-ovs-dpi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nse-ovs-dpi
+  template:
+    metadata:
+      labels:
+        app: nse-ovs-dpi
+        "spiffe.io/spiffe-id": "true"
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: node01
+      containers:
+        - name: nse
+          image: zihaocnic/nse-ovs-dpi:20260331-dfbc14d
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+                - NET_RAW
+          env:
+            - name: SPIFFE_ENDPOINT_SOCKET
+              value: unix:///run/spire/sockets/agent.sock
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NSM_NAME
+              value: "$(POD_NAME)"
+            - name: NSM_SERVICE_NAME
+              value: nse-ovs-dpi
+            - name: NSM_LABELS
+              value: "app:dpi"
+            - name: NSM_DPI_RULES_PATH
+              value: /etc/nse-dpi/local.rules
+            - name: NSM_DPI_SURICATA_CONFIG_PATH
+              value: /etc/suricata/suricata.yaml
+            - name: NSM_DPI_TEMP_ROOT
+              value: /tmp/nse-ovs-dpi
+            - name: NSM_DPI_RULE_POLL_INTERVAL
+              value: 2s
+            - name: NSM_DPI_HTTP_PORT
+              value: "8080"
+            - name: NSM_LOG_LEVEL
+              value: TRACE
+            - name: NSM_CONNECT_TO
+              value: unix:///var/lib/networkservicemesh/nsm.io.sock
+          volumeMounts:
+            - name: spire-agent-socket
+              mountPath: /run/spire/sockets
+              readOnly: true
+            - name: nsm-socket
+              mountPath: /var/lib/networkservicemesh
+              readOnly: true
+            - name: dpi-rules
+              mountPath: /etc/nse-dpi
+              readOnly: true
+            - name: dpi-workdir
+              mountPath: /tmp/nse-ovs-dpi
+      volumes:
+        - name: spire-agent-socket
+          hostPath:
+            path: /run/spire/sockets
+            type: Directory
+        - name: nsm-socket
+          hostPath:
+            path: /var/lib/networkservicemesh
+            type: DirectoryOrCreate
+        - name: dpi-rules
+          configMap:
+            name: nse-ovs-dpi-rules
+            items:
+              - key: local.rules
+                path: local.rules
+        - name: dpi-workdir
+          emptyDir: {}
